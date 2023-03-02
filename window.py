@@ -35,7 +35,7 @@ class App(QWidget):
 		# Create Buttons and Textinput 
 		self.number_check_button=self.check_button('Number Order')
 		self.letter_check_button=self.check_button('Letters')
-		self.file_name_input=self.file_name_input()
+		self.file_name_input=self.text_input()
 		add_button=self.button('Add')
 		remove_button=self.button('Remove')
 		preview_button=self.button('Preview')
@@ -44,7 +44,8 @@ class App(QWidget):
 		#Create Dropdown
 		drop_down=self.drop_down()
 
-
+		#Create Start_number input
+		self.start_number_input=self.text_input()
 
 		# Button group is abstract 
 		# Add 'Number Order' and 'Letters' check buttons to a group 'number_letter_button_group' ''
@@ -79,7 +80,7 @@ class App(QWidget):
 
 
 		# Add widgets to layout and locate the specific position
-		checkbox_group_layout=self.button_layout({self.number_check_button:[0,0],self.letter_check_button:[0,1],drop_down:[1,1]})
+		checkbox_group_layout=self.button_layout({self.number_check_button:[0,0],self.letter_check_button:[0,1],drop_down:[1,1],self.start_number_input:[1,0]})
 		checkbox_group_layout.setColumnStretch(0,1)
 		checkbox_group_layout.setColumnStretch(1,3)
 		add_remove_group_layout=self.button_layout({add_button:[0,0],remove_button:[0,1]})
@@ -146,13 +147,13 @@ class App(QWidget):
 
 		return button_group
 
-	def file_name_input(self):
-		file_name_input=QLineEdit()
+	def text_input(self):
+		text_input=QLineEdit()
 		
-		file_name_input.setMaxLength(20)
-		file_name_input.setReadOnly(True)
+		text_input.setMaxLength(20)
+		text_input.setReadOnly(True)
 
-		return file_name_input
+		return text_input
 
 
 	def button(self,title):
@@ -193,13 +194,29 @@ class App(QWidget):
 				# validator = QRegExpValidator(QRegExp("[A-Za-z]"), lineEdit)
 				# self.file_name_input.setValidator(validator)
 
+				self.start_number_input.setReadOnly(True)
+				self.start_number_input.setPlaceholderText('')
+				self.start_number_input.setText('')
+
 			
 			elif button_text=='Number Order':
-				self.file_name_input.setPlaceholderText('Please Enter the start number')
-				self.file_name_input.setReadOnly(False)
-				self.file_name_input.setFocus()
-				# validator = QRegExpValidator(QRegExp("^[0-9]*$"), lineEdit)
-				# self.file_name_input.setValidator(validator)
+				self.file_name_input.setPlaceholderText('')
+				self.file_name_input.setReadOnly(True)
+				self.file_name_input.setStyleSheet("""
+					QLineEdit{
+
+					background-color:white;
+
+					}
+					""")
+				
+				self.start_number_input.setReadOnly(False)
+				self.start_number_input.setFocus()
+				self.start_number_input.setPlaceholderText('Start Number')
+				self.start_number_input.setText('0')
+
+				validator = QRegExpValidator(QRegExp("^[0-9]*$"), self.start_number_input)
+				self.start_number_input.setValidator(validator)
 
 
 	def open_file(self,button):
@@ -242,28 +259,42 @@ class App(QWidget):
 		count=self.file_list_source.count()
 		# print (f'COUNT now is {count}')
 
+		list_destination_cout=self.file_list_destination.count()
+
+		# Clear the Destination List When there are some exsit
+		if list_destination_cout:
+			self.file_list_destination.clear()
+
+
 		if count:
 
 			path_list=self.get_list_items(count)
 
 			
 
-			zero_place=len(str(count))
-
-			start_number=0
+			# start_number=0
 
 			
 			
 			if self.number_check_button.isChecked():
 
-				# start_number=self.file_name_input.text()
-				
-				for k in path_list:
-					extension=path_list[k][-1].split('.')[-1]
-					path_list[k][-1]=f'{start_number:0{zero_place}d}.{extension}'
-					start_number+=1
-						
-					self.file_list_destination.addItem(QListWidgetItem(''.join(path_list[k])))
+				if self.start_number_input.text():
+
+					
+
+					if int(self.start_number_input.text())==0:
+					 	start_number=0
+					else:
+						start_number=int(self.start_number_input.text().lstrip('0'))
+					
+					zero_place=len(str(count+start_number))
+
+					for k in path_list:
+						extension=path_list[k][-1].split('.')[-1]
+						path_list[k][-1]=f'{start_number:0{zero_place}d}.{extension}'
+						start_number+=1
+							
+						self.file_list_destination.addItem(QListWidgetItem(''.join(path_list[k])))
 
 				
 
@@ -271,7 +302,7 @@ class App(QWidget):
 	def get_list_items(self,count):
 
 		path_list={}
-
+  
 		for i in range(count):
 			item=self.file_list_source.item(i)
 			file_full_path=item.text()
