@@ -13,7 +13,7 @@ class App(QWidget):
 
 	def initUI(self):
 		self.setWindowTitle(self.title)
-		self.resize(800,600)
+		self.resize(1000,1000)
 		self.center()
 		girdLayout=self.layout()
 		self.setLayout(girdLayout)
@@ -42,10 +42,14 @@ class App(QWidget):
 		start_button=self.button('Start')
 
 		#Create Dropdown
-		drop_down=self.drop_down()
+		self.drop_down=self.drop_down()
 
 		#Create Start_number input
 		self.start_number_input=self.text_input()
+
+		#Create Status Bar
+		self.status_bar = QStatusBar()
+
 
 		# Button group is abstract 
 		# Add 'Number Order' and 'Letters' check buttons to a group 'number_letter_button_group' ''
@@ -80,7 +84,7 @@ class App(QWidget):
 
 
 		# Add widgets to layout and locate the specific position
-		checkbox_group_layout=self.button_layout({self.number_check_button:[0,0],self.letter_check_button:[0,1],drop_down:[1,1],self.start_number_input:[1,0]})
+		checkbox_group_layout=self.button_layout({self.number_check_button:[0,0],self.letter_check_button:[0,1],self.drop_down:[1,1],self.start_number_input:[1,0]})
 		checkbox_group_layout.setColumnStretch(0,1)
 		checkbox_group_layout.setColumnStretch(1,3)
 		add_remove_group_layout=self.button_layout({add_button:[0,0],remove_button:[0,1]})
@@ -99,6 +103,7 @@ class App(QWidget):
 		layout.addWidget(preview_start_group_box,1,1)
 		layout.addWidget(number_letter_group_box,2,0)
 		layout.addWidget(self.file_name_input,2,1)
+		layout.addWidget(self.status_bar,3,0,1,2)
 	
 
 
@@ -191,8 +196,8 @@ class App(QWidget):
 				self.file_name_input.setReadOnly(False)
 				self.file_name_input.setFocus()
 				self.file_name_input.setPlaceholderText('Please Enter the filename')
-				# validator = QRegExpValidator(QRegExp("[A-Za-z]"), lineEdit)
-				# self.file_name_input.setValidator(validator)
+				validator = QRegExpValidator(QRegExp("^\\w*$"), self.file_name_input)
+				self.file_name_input.setValidator(validator)
 
 				self.start_number_input.setReadOnly(True)
 				self.start_number_input.setPlaceholderText('')
@@ -200,6 +205,8 @@ class App(QWidget):
 
 			
 			elif button_text=='Number Order':
+
+
 				self.file_name_input.setPlaceholderText('')
 				self.file_name_input.setReadOnly(True)
 				self.file_name_input.setStyleSheet("""
@@ -223,7 +230,7 @@ class App(QWidget):
 		button_text=button.text()
 		# print (f'The button you clicked is {button_text}')
 		count=self.file_list_source.count()
-		# print (f'count is {count}')
+		
 
 
 
@@ -237,7 +244,7 @@ class App(QWidget):
 				exsit_files=[]
 			
 			if filenames[0]:
-				print (f'You select the file is {filenames}')
+				# print (f'You select the file is {filenames}')
 
 				for f in filenames[0]:
 
@@ -251,71 +258,131 @@ class App(QWidget):
 			if selcted_items:
 
 				for item in selcted_items:
-					print (f'Selected items are {item.text()}')
+					
 					self.file_list_source.takeItem(self.file_list_source.row(item))
+			else:
+				self.status_bar.showMessage('No file is selected.')
 
 
 	def rename_file(self,button):
-		count=self.file_list_source.count()
-		# print (f'COUNT now is {count}')
-
+		button_text=button.text()
 		list_destination_cout=self.file_list_destination.count()
 
 		# Clear the Destination List When there are some exsit
-		if list_destination_cout:
-			self.file_list_destination.clear()
 
-
-		if count:
-
-			path_list=self.get_list_items(count)
-
-			
-
-			# start_number=0
-
-			
-			
-			if self.number_check_button.isChecked():
-
-				if self.start_number_input.text():
-
-					
-
-					if int(self.start_number_input.text())==0:
-					 	start_number=0
-					else:
-						start_number=int(self.start_number_input.text().lstrip('0'))
-					
-					zero_place=len(str(count+start_number))
-
-					for k in path_list:
-						extension=path_list[k][-1].split('.')[-1]
-						path_list[k][-1]=f'{start_number:0{zero_place}d}.{extension}'
-						start_number+=1
-							
-						self.file_list_destination.addItem(QListWidgetItem(''.join(path_list[k])))
-
-				
-
-
-	def get_list_items(self,count):
-
-		path_list={}
-  
-		for i in range(count):
-			item=self.file_list_source.item(i)
-			file_full_path=item.text()
-			base_path=file_full_path.rsplit('/',1)[0]+'/'
-			file_name=file_full_path.split('/')[-1]
-			path_list[i]=[base_path,file_name]
+		count=self.file_list_source.count()
 
 		
 
-		return path_list
+		if button_text=="Preview":
+			if list_destination_cout:
+				self.file_list_destination.clear()
+
+			if count:
+
+				path_dic=self.get_list_items(count)
+
+				
+				if self.number_check_button.isChecked():
+
+					if self.start_number_input.text():
+
+						if int(self.start_number_input.text())==0:
+						 	start_number=0
+						else:
+							start_number=int(self.start_number_input.text().lstrip('0'))
+						
+						zero_place=len(str(count+start_number))
+
+						self.add_ranamed_list(path_dic,start_number,zero_place,count,'number')
+
+	
+						
+
+				if self.letter_check_button.isChecked():
+					if self.file_name_input.text():
+						mode=self.drop_down.currentText()
+						if mode=="Prefix":
+
+							self.add_ranamed_list(path_dic,None,None,count,'Prefix')
+			
+						elif mode=="Appendix":
+							self.add_ranamed_list(path_dic,None,None,count,'Appendix')
+					else:
+						self.status_bar.showMessage('You have to input the new file name')
+				else:
+
+					self.status_bar.showMessage('You have to choose the mode.')
+			else:
+
+				self.status_bar.showMessage('You have to add the files first.')
+						
+
+		if button_text=="Start":
+
+			if not list_destination_cout:
+				self.status_bar.showMessage('Destination list is empty, Preview first')
+			elif count!=list_destination_cout:
+				self.status_bar.showMessage('DO the preview first. Source and Destination amount should be the same.')
+			else:
+				reply = QMessageBox.warning(self, 'Warning', 'Are you sure you want to RENAME?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+				if reply==QMessageBox.Yes:
+
+					for i in range(count):
+						source_text=self.file_list_source.item(i).text()
+						destination_text=self.file_list_destination.item(i).text()
+						os.rename(source_text,destination_text)
+
+						self.file_list_source.item(i).setText(destination_text)
+					
+					self.status_bar.showMessage('Rename Done!')
 
 
 
+
+
+	
+
+	def get_list_items(self,count):
+
+		path_dic={}
+ 
+		for i in range(count):
+			
+			item=self.file_list_source.item(i)
+
+			file_full_path=item.text()
+			base_path=file_full_path.rsplit('/',1)[0]+'/'
+			file_name=file_full_path.split('/')[-1]
+			path_dic[i]=[base_path,file_name]
+
+		
+
+		return path_dic
+
+
+	def add_ranamed_list(self,path_dic,start_number,zero_place,count,mode):
+
+	
+
+		for k in path_dic:
+			extension=path_dic[k][-1].split('.')[-1]
+			if mode=="number":
+				if zero_place:
+					path_dic[k][-1]=f'{start_number:0{zero_place}d}.{extension}'
+					start_number+=1
+			elif mode=="Prefix":
+				path_dic[k][-1]=f'{self.file_name_input.text()}{k:0{len(str(count))}d}.{extension}'
+			elif mode=="Appendix":
+				path_dic[k][-1]=f'{k:0{len(str(count))}d}{self.file_name_input.text()}.{extension}'
+
+		
+			self.file_list_destination.addItem(QListWidgetItem(''.join(path_dic[k])))
+
+	
+
+	
 
 
 	def file_list(self):
